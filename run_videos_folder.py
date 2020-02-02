@@ -19,12 +19,11 @@ currentDT = time.localtime()
 start_datetime = time.strftime("-%m-%d-%H-%M-%S", currentDT)
 
 def get_pose(video_file, output_path):
-    # Video input
-    video_file = video_dir + video_file
     # data out
     output_data = []
     # Output location
     output_format = '.mp4'
+    video = os.path.basename(video_file)
     video_output = output_path + '/' + video + str(start_datetime) + output_format
     # Video reader
     cam = cv2.VideoCapture(video_file)
@@ -107,17 +106,19 @@ if __name__ == '__main__':
 
     # go over files in video_dir
     filelist = glob.glob(video_dir + r'/*.mp4')
-    for video in filelist:
+    for video_file in filelist:
+        video = os.path.basename(video_file)
         try:
             print('----------------------------------------')
             print(f'Process file {video}')
-            output_data = get_pose(video, video_save_dir)
+            output_data = get_pose(video_file, video_save_dir)
         except Exception as error:
             print(f"Error encountered in file {video}")
             print(error)
             continue
 
         # save data per file
+        
         datafile_path = os.path.join(data_save_dir, video + '.pkl')
         with open(datafile_path, 'wb') as file:
             pickle.dump(output_data, file)
