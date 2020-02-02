@@ -11,7 +11,7 @@ from processing import extract_parts, draw
 
 from model.cmu_model import get_testing_model
 
-KERAS_WEIGHTS_FILEPATH = '/data/SMOKING_POSE/weights/model.h5'
+KERAS_WEIGHTS_FILEPATH = '/data/smoking_pose/weights/model.h5'
 
 sys.path.append(os.path.join(os.path.dirname(__file__), ".."))
 
@@ -82,8 +82,8 @@ if __name__ == '__main__':
     args = parser.parse_args()
     video_dir = args.dir
     frame_rate_ratio = args.frame_ratio
-    process_speed = args.process_speed
-    ending_frame = args.end
+    # process_speed = args.process_speed
+    # ending_frame = args.end
 
     # make save folders
     save_dir = video_dir + '_pose'
