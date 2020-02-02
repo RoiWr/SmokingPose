@@ -7,7 +7,7 @@ import argparse
 from moviepy.video.io.ffmpeg_tools import ffmpeg_extract_subclip
 
 # CONSTANTS
-ANNOTATION_FILE_PATH = '/data/smoking_pose/HACS/annotations/HACS-dataset/HACS_v1.1.1/HACS_clips_v1.1.1.csv'
+ANNOTATION_FILE_PATH = '/data/smoking_pose/HACS/HACS-dataset/HACS_v1.1.1/HACS_clips_v1.1.1.csv'
 VIDEO_DIR = '/data/smoking_pose/HACS'
 DEF_CATEGORY = 'Smoking a cigarette'
 
@@ -28,17 +28,18 @@ if __name__ == '__main__':
     category_dir = category.replace(' ', '_')
     save_path = os.path.join(VIDEO_DIR, 'clips', category_dir)
     if not os.path.isdir(save_path):
+        os.mkdir(os.path.join(VIDEO_DIR, 'clips'))
         os.mkdir(save_path)
 
     labels = []
-    for row in df_cat.iterrows():
+    for i, row in df_cat.iterrows():
         filename = f'v_{row.youtube_id}.mp4'
         filepath = os.path.join(VIDEO_DIR, category_dir, filename) # TODO: check that '//' work in bash
 
-        if os.path.isfile(filename):
+        if os.path.isfile(filepath):
             outfilename = f'v_{row.youtube_id}_{row.start:.0f}_{row.end:.0f}.mp4'
             outfile_path = os.path.join(save_path, outfilename)
-            ffmpeg_extract_subclip(filename, row['start'], row['end'], targetname=outfile_path)
+            ffmpeg_extract_subclip(filepath, row['start'], row['end'], targetname=outfile_path)
             labels.append({'youtube_id': row['youtube_id'], 'category': category, 'label': row['label']})
             print(f'Clipped video {filename} successfully')
         else:
