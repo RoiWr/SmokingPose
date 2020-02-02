@@ -122,7 +122,7 @@ if __name__ == "__main__":
     # parse annotation file
     videos = set()
     if args.dataset == 'all':
-        annotation_file = 'HACS_v1.1.1/HACS_clips_v1.1.1.csv'
+        annotation_file = '/data/smoking_pose/HACS/HACS-dataset/HACS_v1.1.1/HACS_clips_v1.1.1.csv'
         with open(annotation_file, 'r') as f:
             reader = csv.reader(f, delimiter=',')
             next(reader)
@@ -134,7 +134,7 @@ if __name__ == "__main__":
                 videos.add((vid, classname))
 
     elif args.dataset == 'segments':
-        annotation_file = 'HACS_v1.1.1/HACS_segments_v1.1.1.json'
+        annotation_file = '/data/smoking_pose/HACS/HACS-dataset/HACS_v1.1.1/HACS_clips_v1.1.1.json'
         dataset = json.load(open(annotation_file, 'r'))['database']
         for vid, info in dataset.items():
             info = dataset[vid]
@@ -159,7 +159,7 @@ if __name__ == "__main__":
             download_url = str(line)[2:-3]
             videos.add((download_url, video_name, class_name))
     elif args.dataset == 'smoking_seg':
-        annotation_file = 'HACS_v1.1.1/HACS_segments_v1.1.1.json'
+        annotation_file = '/data/smoking_pose/HACS/HACS-dataset/HACS_v1.1.1/HACS_clips_v1.1.1.json'
         dataset = json.load(open(annotation_file, 'r'))['database']
         for vid, info in dataset.items():
             info = dataset[vid]
