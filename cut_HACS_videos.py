@@ -2,16 +2,13 @@
 Roi Weinberger & Sagiv Yaarri. Date: 1/2/2020 '''
 
 import os
-import numpy as np
 import pandas as pd
 import argparse
 from moviepy.video.io.ffmpeg_tools import ffmpeg_extract_subclip
-# TODO: add logging
 
 # CONSTANTS
 ANNOTATION_FILE_PATH = '/data/smoking_pose/HACS/annotations/HACS-dataset/HACS_v1.1.1/HACS_clips_v1.1.1.csv'
 VIDEO_DIR = '/data/smoking_pose/HACS'
-SAVE_DIR = '/data/smoking_pose/HACS/clips'
 DEF_CATEGORY = 'Smoking a cigarette'
 
 
@@ -27,20 +24,30 @@ if __name__ == '__main__':
     df_cat = df.loc[df.classname == category, :]
     del df
 
+    # create save folder
+    category_dir = category.replace(' ', '_')
+    save_path = os.path.join(VIDEO_DIR, 'clips', category_dir)
+    if not os.path.isdir(save_path):
+        os.mkdir(save_path)
+
     labels = []
     for row in df_cat.iterrows():
-        category_dir = category.replace(' ', '_')
-        filename = os.path.join(VIDEO_DIR, category_dir, row['youtube_id'] + '.mp4') # TODO: check that '//' work in bash
-        # TODO: logger
+        filename = f'v_{row.youtube_id}.mp4'
+        filepath = os.path.join(VIDEO_DIR, category_dir, filename) # TODO: check that '//' work in bash
+
         if os.path.isfile(filename):
-            clip = ffmpeg_extract_subclip(filename, row['start'], row['end'], targetname=None)
-            # TODO: save clip to SAVE_DIR
-            labels.append({'youtube_id': row['youtube_id'], 'label': row['label']})
+            outfilename = f'v_{row.youtube_id}_{row.start:.0f}_{row.end:.0f}.mp4'
+            outfile_path = os.path.join(save_path, outfilename)
+            ffmpeg_extract_subclip(filename, row['start'], row['end'], targetname=outfile_path)
+            labels.append({'youtube_id': row['youtube_id'], 'category': category, 'label': row['label']})
+            print(f'Clipped video {filename} successfully')
         else:
-            print(f'Video {row.youtube_id} not found. skip to next video')  # TODO: do in logger
+            print(f'Video {row.youtube_id} not found. skip to next video')
             continue
 
-    # TODO: save labels as csv
     labels_df = pd.DataFrame(labels)
-    save_filepath = os.path.join(VIDEO_DIR, category_dir, 'labels.csv')
-    with ('save_filepath', 'w') as file:
+    save_filepath = os.path.join(save_path, 'labels.csv')
+    labels_df.to_csv(save_filepath)
+    print(f'Labels file saved')
+
+
