@@ -110,10 +110,14 @@ if __name__ == '__main__':
     # go over files in video_dir
     filelist = glob.glob(video_dir + r'/*.mp4')
     for i, video_file in enumerate(filelist):
-        video = os.path.basename(video_file)
+        video = os.path.basename(video_file).split('.')[0]
+        print('----------------------------------------')
+        print(f'Process file no. {i+1}/{len(filelist)}: {video}')
+ 
+        if video in '.'.join(filelist):
+            print('File already processed, skip to next.')
+            continue
         try:
-            print('----------------------------------------')
-            print(f'Process file no. {i+1}/{len(filelist)}: {video}')
             output_data = get_pose(video_file, video_save_dir)
         except Exception as error:
             print(f"Error encountered in file {video}")
