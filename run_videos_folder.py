@@ -12,6 +12,7 @@ from processing import extract_parts, draw
 from model.cmu_model import get_testing_model
 
 KERAS_WEIGHTS_FILEPATH = '/data/smoking_pose/weights/model.h5'
+SAVE_DIR = '/data/smoking_pose/out'
 
 sys.path.append(os.path.join(os.path.dirname(__file__), ".."))
 
@@ -23,7 +24,7 @@ def get_pose(video_file, output_path):
     output_data = []
     # Output location
     output_format = '.mp4'
-    video = os.path.basename(video_file)
+    video = os.path.basename(video_file).split('.')[0]
     video_output = output_path + '/' + video + str(start_datetime) + output_format
     # Video reader
     cam = cv2.VideoCapture(video_file)
@@ -71,27 +72,27 @@ def get_pose(video_file, output_path):
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
-    parser.add_argument('--dir', type=str, required=True, help='input video directory name')
+    parser.add_argument('--in_dir', type=str, default='/data/smoking_pose/in', help='input video directory name')
+        parser.add_argument('--out_dir', type=str, default='/data/smoking_pose/out', help='output video directory name')
     # parser.add_argument('--model', type=str, default='model/keras/model.h5', help='path to the weights file')
-    parser.add_argument('--frame_ratio', type=int, default=1, help='analyze every [n] frames')
+    parser.add_argument('--frame_ratio', type=int, default=3, help='analyze every [n] frames')
     # parser.add_argument('--process_speed', type=int, default=4,
     #                     help='Int 1 (fastest, lowest quality) to 4 (slowest, highest quality)')
     parser.add_argument('--end', type=int, default=None, help='Last video frame to analyze')
 
     args = parser.parse_args()
-    video_dir = args.dir
+    video_dir = args.in_dir
+    save_dir = args.out_dir
     frame_rate_ratio = args.frame_ratio
     # process_speed = args.process_speed
     # ending_frame = args.end
 
     # make save folders
-    save_dir = video_dir + '_pose'
     video_save_dir = os.path.join(save_dir, 'videos')
     data_save_dir = os.path.join(save_dir, 'data')
-    if not os.path.isdir(save_dir):
-        os.mkdir(save_dir)
-        os.mkdir(video_save_dir)
-        os.mkdir(data_save_dir)
+    for folder in [save_dir, video_save_dir, data_save_dir]:
+        if not os.path.isdir(folder):
+            os.mkdir(folder)
 
     print('start processing...')
 
@@ -106,11 +107,11 @@ if __name__ == '__main__':
 
     # go over files in video_dir
     filelist = glob.glob(video_dir + r'/*.mp4')
-    for video_file in filelist:
+    for i, video_file in enumerate(filelist):
         video = os.path.basename(video_file)
         try:
             print('----------------------------------------')
-            print(f'Process file {video}')
+            print(f'Process file no. {i+1}/{len(filelist)}: {video}')
             output_data = get_pose(video_file, video_save_dir)
         except Exception as error:
             print(f"Error encountered in file {video}")
