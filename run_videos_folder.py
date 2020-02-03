@@ -72,8 +72,10 @@ def get_pose(video_file, output_path):
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
-    parser.add_argument('--in_dir', type=str, default='/data/smoking_pose/in', help='input video directory name')
-        parser.add_argument('--out_dir', type=str, default='/data/smoking_pose/out', help='output video directory name')
+    parser.add_argument('--in_dir', type=str, default='/data/smoking_pose/in', 
+                        help='input video directory name')
+    parser.add_argument('--out_dir', type=str, default='/data/smoking_pose/out', 
+                            help='output video directory name')
     # parser.add_argument('--model', type=str, default='model/keras/model.h5', help='path to the weights file')
     parser.add_argument('--frame_ratio', type=int, default=3, help='analyze every [n] frames')
     # parser.add_argument('--process_speed', type=int, default=4,
