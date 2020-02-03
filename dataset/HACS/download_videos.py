@@ -104,12 +104,14 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument('--root_dir', required=True)
     parser.add_argument('--tmp_dir', default='/tmp/HACS')
-    parser.add_argument('--dataset', default='all', choices=['all', 'segments', 'missing','smoking_seg'])
+    parser.add_argument('--dataset', default='all', choices=['all', 'segments', 'missing'])
     parser.add_argument('--shortside', default=256, type=int)
     parser.add_argument('--num_worker', default=16, type=int)
     parser.add_argument('--seed', default=123, type=int)
     parser.add_argument('--missing_url', default=None, type=str)
     parser.add_argument('--classes', nargs='+', default=[])
+    parser.add_argument('--annotation_dir', 
+    	default='/data/smoking_pose/HACS/HACS-dataset/HACS_v1.1.1/', type=str)
     args = parser.parse_args()
     random.seed(args.seed)
 
@@ -122,7 +124,8 @@ if __name__ == "__main__":
     # parse annotation file
     videos = set()
     if args.dataset == 'all':
-        annotation_file = '/data/smoking_pose/HACS/HACS-dataset/HACS_v1.1.1/HACS_clips_v1.1.1.csv'
+        # annotation_file = '/data/smoking_pose/HACS/HACS-dataset/HACS_v1.1.1/HACS_clips_v1.1.1.csv'
+        annotation_file = args.annotation_dir + '/HACS_clips_v1.1.1.csv'
         with open(annotation_file, 'r') as f:
             reader = csv.reader(f, delimiter=',')
             next(reader)
@@ -134,7 +137,8 @@ if __name__ == "__main__":
                 videos.add((vid, classname))
 
     elif args.dataset == 'segments':
-        annotation_file = '/data/smoking_pose/HACS/HACS-dataset/HACS_v1.1.1/HACS_clips_v1.1.1.json'
+        # annotation_file = '/data/smoking_pose/HACS/HACS-dataset/HACS_v1.1.1/HACS_clips_v1.1.1.json'
+        annotation_file = args.annotation_dir + '/HACS_segments_v1.1.1.json'
         dataset = json.load(open(annotation_file, 'r'))['database']
         for vid, info in dataset.items():
             info = dataset[vid]
@@ -158,18 +162,10 @@ if __name__ == "__main__":
             class_name = str(line).split('/')[-2]
             download_url = str(line)[2:-3]
             videos.add((download_url, video_name, class_name))
-    elif args.dataset == 'smoking_seg':
-        annotation_file = '/data/smoking_pose/HACS/HACS-dataset/HACS_v1.1.1/HACS_clips_v1.1.1.json'
-        dataset = json.load(open(annotation_file, 'r'))['database']
-        for vid, info in dataset.items():
-            info = dataset[vid]
-            if info['subset'] == 'testing':
-                continue
-            annos = info['annotations']
-            for anno in annos:
-                classname = anno['label'].replace(' ', '_')
-                if classname == 'Smoking_a_cigarette':
-                    videos.add((vid, classname))
+
+    if not args.classes == []:
+        classes_to_download = args.classes
+        videos = set([(vid,classname) for vid,classname in videos if classname in classes_to_download])
 
     print('{} videos to download.'.format(len(videos)))
 
