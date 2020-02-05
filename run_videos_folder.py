@@ -109,12 +109,13 @@ if __name__ == '__main__':
 
     # go over files in video_dir
     filelist = glob.glob(video_dir + r'/*.mp4')
+    out_filelist = glob.glob(video_save_dir + r'/*.mp4')
     for i, video_file in enumerate(filelist):
         video = os.path.basename(video_file).split('.')[0]
         print('----------------------------------------')
         print(f'Process file no. {i+1}/{len(filelist)}: {video}')
- 
-        if video in '.'.join(filelist):
+
+        if video in '.'.join(out_filelist):
             print('File already processed, skip to next.')
             continue
         try:
