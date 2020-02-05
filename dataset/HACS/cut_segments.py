@@ -3,6 +3,7 @@ Roi Weinberger & Sagiv Yaarri. Date: 5/2/2020 '''
 
 import os
 from moviepy.video.io.VideoFileClip import VideoFileClip
+import json
 
 
 # CONSTANTS
@@ -43,9 +44,13 @@ for category in categories:
             for ann in vid_annotations:
                 start = ann['segment'][0]
                 end = min(ann['segment'][1],start+MAX_CLIP_LENGTH)
-                with VideoFileClip(filepath) as video:
-                    new = video.subclip(start, end)
-                    new.write_videofile(os.path.join(out_dir,vid), audio_codec='aac')
+                try:
+                    with VideoFileClip(filepath) as video:
+                        new = video.subclip(start, end)
+
+                        new.write_videofile(os.path.join(out_dir,vid), audio_codec='aac')
+                except Exception as ex:
+                    print(ex)
         else:
             print(f'Couldn\'t find annotation data for video: {vid}')
         
