@@ -110,6 +110,8 @@ if __name__ == '__main__':
     filename = args.file
     save_dir = args.save_dir
 
+    print(f"Process file {filename}")
+
     # read file
     filepath = os.path.join(data_dir, filename)
     with open(filepath, 'rb') as file:
@@ -125,4 +127,6 @@ if __name__ == '__main__':
                    [l.strip(' ') for p in coco_parts_xy for l in p] + \
                    ['config_score', 'no_joints', 'object_id']
     out_filename = filename.split('.')[0] + '_data.csv'
-    np.savetxt(out_filename, array2, header=array_header, delimiter=",")
+    out_filepath = os.path.join(out_filename)
+    np.savetxt(out_filepath, array2, header=",".join(array_header), delimiter=",")
+    print(f"File {filename} successfully analyzed. Saved to {out_filepath}")
