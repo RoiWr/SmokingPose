@@ -1,3 +1,5 @@
+''' Code to run for marking of Pose estimation joints and tracking of persons across video frames '''
+
 import os
 import pickle
 import numpy as np
@@ -7,6 +9,7 @@ from scipy.ndimage.filters import gaussian_filter
 import cv2
 import util
 import time
+import argparse
 
 
 def draw_boxes(input_image, frame_data, no_objects, colors):
@@ -57,19 +60,19 @@ def color_generator(n):
         colors.append((np.random.randint(255), np.random.randint(255), np.random.randint(255)))
     return colors
 
-def create_video(joints, tracks):
+def create_video(video_path, save_dir_path, joints, tracks):
     print('start processing...')
     frame_rate_ratio = 3
 
-    video = os.path.basename(VIDEO_FILE_PATH).split('.')[0]
+    video = os.path.basename(video_path).split('.')[0]
 
     # Output location
-    output_path = OUT_VIDEO_PATH
+    output_path = save_dir_path
     output_format = '.mp4'
-    video_output = output_path + video + str(start_datetime) + output_format
+    video_output = output_path + video + '_pose_tracking' + output_format
 
     # Video reader
-    cam = cv2.VideoCapture(video_file)
+    cam = cv2.VideoCapture(video_path)
     input_fps = cam.get(cv2.CAP_PROP_FPS)
     ret_val, orig_image = cam.read()
     video_length = int(cam.get(cv2.CAP_PROP_FRAME_COUNT))
@@ -108,3 +111,38 @@ def create_video(joints, tracks):
         ret_val, orig_image = cam.read()
 
         i += 1
+
+
+if __name__ == '__main__':
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--video', type=str, help='input video name')
+    parser.add_argument('--joints', type=str, help='input joints data (pkl)')
+    parser.add_argument('--tracks', type=str, help='input tracking data (csv)')
+    parser.add_argument('--video_dir', type=str, default='',
+                        help='input video directory name')
+    parser.add_argument('--data_dir', type=str, default='',
+                        help='input data directory name')
+    parser.add_argument('--save_dir', type=str, default='',
+                        help='output data directory name')
+    args = parser.parse_args()
+
+    video_name = args.video
+    joints_path = args.joints
+    tracks_path = args.tracks
+    data_dir = args.data_dir
+    save_dir = args.save_dir
+    video_dir = args.video_dir
+    video_path = os.path.join(video_dir, video_name)
+
+    print(f"Process file {video_name}")
+
+    # read data
+    filepath = os.path.join(data_dir, joints_path)
+    with open(filepath, 'rb') as file:
+        joints = pickle.load(file)
+
+    filepath = os.path.join(data_dir, tracks_path)
+    tracks = np.genfromtxt(filepath)
+
+    # mark videos and save them
+    create_video(video_path, save_dir, joints, tracks)
