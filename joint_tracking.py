@@ -5,7 +5,6 @@ import pickle
 import numpy as np
 from sklearn.metrics import pairwise_distances_argmin
 from sort.sort import *
-import csv
 
 # CONSTANTS
 COCO_BODY_PARTS = ['nose', 'neck',
@@ -95,6 +94,10 @@ def track_persons(joints_array, n_frames):
     object_ids = np.array(object_ids)
     object_ids[object_ids >= 0] = object_ids[object_ids >= 0] - min(object_ids[object_ids >= 0])  # reindex from 0
     return np.column_stack((joints_array, object_ids))
+
+def joint_tracking(data):
+    array1 = get_all_joints(data)
+    return track_persons(array1, len(data))
 
 
 if __name__ == '__main__':
