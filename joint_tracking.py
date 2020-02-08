@@ -16,12 +16,10 @@ COCO_BODY_PARTS = ['nose', 'neck',
                    ]
 
 
-def get_person_pose_frame(person, candidate, person_thresh=0, joint_thresh=0):
+def get_person_pose_frame(person, candidate, joint_thresh=0):
     ''' extracts body positions for given person (item in the "subset" list) '''
     no_joints = person[19]
     config_score = person[18]  # check configuration score
-    if config_score < person_thresh:
-        return False
     joints = person[0:18]
     joints_locs = np.zeros((18, 2))
     for i, joint in enumerate(joints):
@@ -34,6 +32,13 @@ def get_person_pose_frame(person, candidate, person_thresh=0, joint_thresh=0):
             joints_locs[i, :] = candidate[j, 0:2]
 
     return joints_locs, config_score, no_joints
+
+def is_person(person, person_thresh=15):
+    config_score = person[18]
+    if config_score < person_thresh:
+        return False
+    else:
+        return True
 
 def get_bbox_from_pose(joints_locs):
     joints_locs_min = joints_locs.copy()
@@ -55,28 +60,31 @@ def get_bbox_center(bbox):
     y = np.mean(bbox[:,[1, 3]], axis=1)
     return np.column_stack((x, y))
 
-def get_all_joints(data):
+def get_all_joints(data, person_thresh=15, joint_thresh=0):
     '''Function outputs an array of detected persons in each frame ,
     their joint body parts x, y locations and bounding box [x1,y1,x2,y2]'''
     joints_array = []
     for i, frame_data in enumerate(data):
+        frame_id = frame_data['frame_id']
         # print(f'Processing frame {i}')
         subset = np.array(frame_data['subset'])
         candidate = np.array(frame_data['candidate'])
         for person in subset:
-            joints_locs, confidence, no_joints = get_person_pose_frame(person, candidate)
+            if not is_person(person, person_thresh=person_thresh):
+                continue
+            joints_locs, confidence, no_joints = get_person_pose_frame(person, candidate, joint_thresh=joint_thresh)
             bboxes = get_bbox_from_pose(joints_locs)
-            joints_array.append([i] + list(bboxes) + list(joints_locs.flatten())+ [confidence, no_joints])
+            joints_array.append([frame_id] + list(bboxes) + list(joints_locs.flatten()) + [confidence, no_joints])
     return np.array(joints_array)
 
-def track_persons(joints_array, n_frames):
+def track_persons(joints_array, n_frames, frame_rate):
     ''' track the identified persons from different frames by the SORT algorithm.
     :return joints_array with new column of object_id '''
     # create instance of SORT
     mot_tracker = Sort()
 
     object_ids = []
-    for i in range(n_frames):
+    for i in np.arange(0, n_frames, frame_rate):
         detections = joints_array[joints_array[:, 0] == i, 1:5]
         # update SORT
         # trackers is a np array where each row contains a valid bounding box and track_id (last column)
@@ -95,9 +103,11 @@ def track_persons(joints_array, n_frames):
     object_ids[object_ids >= 0] = object_ids[object_ids >= 0] - min(object_ids[object_ids >= 0])  # reindex from 0
     return np.column_stack((joints_array, object_ids))
 
-def joint_tracking(data):
-    array1 = get_all_joints(data)
-    return track_persons(array1, len(data))
+def joint_tracking(data, person_thresh=15, joint_thresh=0):
+    array1 = get_all_joints(data, person_thresh=person_thresh, joint_thresh=joint_thresh)
+    frame_rate = int(data[1]['frame_id'] - data[0]['frame_id'])
+    n_frames = len(data) * frame_rate
+    return track_persons(array1, n_frames, frame_rate)
 
 
 if __name__ == '__main__':
@@ -107,11 +117,17 @@ if __name__ == '__main__':
                         help='input data directory name')
     parser.add_argument('--save_dir', type=str, default='',
                         help='output data directory name')
+    parser.add_argument('--person_thresh', type=int, default=0,
+                        help='configuration score of person threshold')
+    parser.add_argument('--joint_thresh', type=int, default=0,
+                        help='joint detection threshold')
     args = parser.parse_args()
 
     data_dir = args.data_dir
     filename = args.file
     save_dir = args.save_dir
+    person_thresh = args.person_thresh
+    joint_thresh = args.joint_thresh
 
     print(f"Process file {filename}")
 
@@ -120,9 +136,10 @@ if __name__ == '__main__':
     with open(filepath, 'rb') as file:
         data = pickle.load(file)
 
-    n_frames = len(data)
-    array1 = get_all_joints(data)
-    array2 = track_persons(array1, n_frames)
+    frame_rate = int(data[1]['frame_id'] - data[0]['frame_id'])
+    n_frames = len(data) * frame_rate
+    array1 = get_all_joints(data, person_thresh=person_thresh, joint_thresh=joint_thresh)
+    array2 = track_persons(array1, n_frames, frame_rate)
 
     # save array2 as csv
     coco_parts_xy = [[part + '_x', part + '_y'] for part in COCO_BODY_PARTS[0:-1]]

@@ -14,14 +14,13 @@ import argparse
 
 def draw_boxes(input_image, frame_data, no_objects, colors):
     canvas = input_image.copy()
-    colors = []
-    for i, c in enumerate(colors):
-        cur_canvas = canvas.copy()
-        object_bbox = tuple(frame_data[frame_data[:, -1].astype(int) == i, 1:5].astype(int))
-        cv2.rectangle(cur_canvas, object_bbox, color=c,
-                      thickness=3)
-        canvas = cv2.addWeighted(canvas, 0.4, cur_canvas, 0.6, 0)
-
+    for o in range(no_objects):
+        # check if object i in frame
+        if any(frame_data[:, -1] == o):
+            object_bbox = tuple(list(frame_data[frame_data[:, -1].astype(int) == o, 1:5].astype(int).flatten()))
+            # cv2.rectangle(image, start_point, end_point, color, thickness)
+            canvas = cv2.rectangle(img=canvas, pt1=object_bbox[0:2], pt2=object_bbox[2:4],
+                                   color=colors[o], thickness=3)
     return canvas
 
 def draw_joints(input_image, all_peaks, subset, candidate, resize_fac=1):
@@ -61,13 +60,13 @@ def color_generator(n):
     return colors
 
 def create_video(video_path, save_dir_path, joints, tracks):
-    print('start processing...')
     frame_rate_ratio = 3
-
     video = os.path.basename(video_path).split('.')[0]
 
+    print(f'start processing video {video}')
+
     # Output location
-    output_path = save_dir_path
+    output_path = save_dir_path + '/'
     output_format = '.mp4'
     video_output = output_path + video + '_pose_tracking' + output_format
 
@@ -91,29 +90,41 @@ def create_video(video_path, save_dir_path, joints, tracks):
     j = 0  # analyzed frames id
     while (cam.isOpened()) and ret_val is True and i < ending_frame:
         if i % frame_rate_ratio == 0:
+            print('Processing frame: ', i)
             input_image = cv2.cvtColor(orig_image, cv2.COLOR_RGB2BGR)
 
             tic = time.time()
 
             # generate image with body parts
-            body_parts, all_peaks, subset, candidate = joints[j, 1:5]
+            body_parts = joints[j]['body_parts']
+            all_peaks = joints[j]['all_peaks']
+            subset = joints[j]['subset']
+            candidate = joints[j]['candidate']
+
             canvas = draw_joints(orig_image, all_peaks, subset, candidate)
 
             # draw bounding boxes based on data analyzed by joint_tracking.py
             frame_data = tracks[tracks[:, 0].astype(int) == i, :]
-            canvas = draw_boxes(canvas, frame_data, no_objects, colors)
-            print('Processing frame: ', i)
+            try:
+                canvas = draw_boxes(canvas, frame_data, no_objects, colors)
+            except Exception as e:
+                print(f'Error occurred in drawing boxes in frame {i}')
+                print(e)
+
+            out.write(canvas)
+
             toc = time.time()
             print('processing time is %.5f' % (toc - tic))
 
-            out.write(canvas)
             j += 1
         ret_val, orig_image = cam.read()
 
         i += 1
 
+    print(f'Finished processing video {video}')
 
-if __name__ == '__main__':
+
+def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('--video', type=str, help='input video name')
     parser.add_argument('--joints', type=str, help='input joints data (pkl)')
@@ -146,3 +157,18 @@ if __name__ == '__main__':
 
     # mark videos and save them
     create_video(video_path, save_dir, joints, tracks)
+
+def tg():
+    video_path = 'sample_data/v_2VPd5Hcraxw.mp4'
+    save_dir = 'sample_data'
+    data_file_path = 'sample_data/v_2VPd5Hcraxw.pkl'
+    with open(data_file_path, 'rb') as file:
+        joints = pickle.load(file)
+
+    tracks = joint_tracking(joints, person_thresh=0)
+    # mark videos and save them
+    create_video(video_path, save_dir, joints, tracks)
+
+
+if __name__ == '__main__':
+    tg()
