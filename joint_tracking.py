@@ -103,7 +103,7 @@ def track_persons(joints_array, n_frames, frame_rate):
     object_ids[object_ids >= 0] = object_ids[object_ids >= 0] - min(object_ids[object_ids >= 0])  # reindex from 0
     return np.column_stack((joints_array, object_ids))
 
-def joint_tracking(data, person_thresh=15, joint_thresh=0):
+def joint_tracking(data, person_thresh=0, joint_thresh=0):
     array1 = get_all_joints(data, person_thresh=person_thresh, joint_thresh=joint_thresh)
     frame_rate = int(data[1]['frame_id'] - data[0]['frame_id'])
     n_frames = len(data) * frame_rate

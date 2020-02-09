@@ -153,7 +153,7 @@ def main():
         joints = pickle.load(file)
 
     filepath = os.path.join(data_dir, tracks_path)
-    tracks = np.genfromtxt(filepath)
+    tracks = np.genfromtxt(filepath, delimiter=',')
 
     # mark videos and save them
     create_video(video_path, save_dir, joints, tracks)
