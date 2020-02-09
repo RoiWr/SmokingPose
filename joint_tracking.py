@@ -2,9 +2,10 @@
 
 import os
 import pickle
-import numpy as np
+
 from sklearn.metrics import pairwise_distances_argmin
 from sort.sort import *
+import numpy as np
 
 # CONSTANTS
 COCO_BODY_PARTS = ['nose', 'neck',
@@ -86,16 +87,20 @@ def track_persons(joints_array, n_frames, frame_rate):
     object_ids = []
     for i in np.arange(0, n_frames, frame_rate):
         detections = joints_array[joints_array[:, 0] == i, 1:5]
+        detections[detections == np.inf] = 100000
+        # valid_dets_idx = np.argwhere(~np.isinf(detections).any(axis=1))[0]
+
         # update SORT
         # trackers is a np array where each row contains a valid bounding box and track_id (last column)
         trackers = mot_tracker.update(detections)
+        valid_trks_idx = np.argwhere(~np.isnan(trackers).any(axis=1))[0]
 
         # match detections and trackers based on bbox centers distance
         det_centers = get_bbox_center(detections)
-        trk_centers = get_bbox_center(trackers[:, 0:4])
+        trk_centers = get_bbox_center(trackers[valid_trks_idx, 0:4])
         indexes = pairwise_distances_argmin(det_centers, trk_centers, axis=0, metric='euclidean')
         object_ids_frame = np.tile(-1, detections.shape[0])
-        object_ids_frame[indexes] = trackers[:, -1]
+        object_ids_frame[indexes] = trackers[valid_trks_idx, -1]
         object_ids += list(object_ids_frame)
 
     # concatenate object ids as new column to joints_array
@@ -113,9 +118,11 @@ def joint_tracking(data, person_thresh=0, joint_thresh=0):
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('--file', type=str, help='input file name')
-    parser.add_argument('--data_dir', type=str, default='',
+    parser.add_argument('--data_dir', type=str,
+                        default=r'C:\Users\Roi\Documents\ITC\PoseProject\out\n_segmented\data',
                         help='input data directory name')
-    parser.add_argument('--save_dir', type=str, default='',
+    parser.add_argument('--save_dir', type=str,
+                        default=r'C:\Users\Roi\Documents\ITC\PoseProject\out\n_segmented\tracks',
                         help='output data directory name')
     parser.add_argument('--person_thresh', type=int, default=0,
                         help='configuration score of person threshold')
@@ -147,6 +154,6 @@ if __name__ == '__main__':
                    [l.strip(' ') for p in coco_parts_xy for l in p] + \
                    ['config_score', 'no_joints', 'object_id']
     out_filename = filename.split('.')[0] + '_data.csv'
-    out_filepath = os.path.join(out_filename)
+    out_filepath = os.path.join(save_dir, out_filename)
     np.savetxt(out_filepath, array2, header=",".join(array_header), delimiter=",")
     print(f"File {filename} successfully analyzed. Saved to {out_filepath}")
