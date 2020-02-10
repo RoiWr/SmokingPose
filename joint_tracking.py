@@ -92,7 +92,7 @@ def track_persons(joints_array, n_frames, frame_rate):
         detections[detections == np.inf] = 100000
         # valid_dets_idx = np.argwhere(~np.isinf(detections).any(axis=1))[0]
 
-        # update SORT
+        # update SORT l
         # trackers is a np array where each row contains a valid bounding box and track_id (last column)
         trackers = mot_tracker.update(detections)
         valid_trks_idx = np.argwhere(~np.isnan(trackers).any(axis=1)).reshape(-1)
