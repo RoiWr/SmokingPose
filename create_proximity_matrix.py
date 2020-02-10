@@ -36,9 +36,9 @@ def get_location_matrix(df_joints, object_ids, danger_joints):
 def get_proximity_matrix(location_matrix, frames_to_calc):
     proxmat_size = location_matrix.shape[0] * location_matrix.shape[1]
     proxmat = np.zeros((len(frames_to_calc), proxmat_size, proxmat_size))
-    # proxmat = np.zeros((df_joints.frame_id.nunique(), proxmat_size, proxmat_size))
     for i, frame_id in enumerate(frames_to_calc):
-        xy_vec = np.nan_to_num(location_matrix[:, :, int(frame_id), :].reshape(-1, 2), nan=100000)
+        xy_vec  = location_matrix[:, :, int(frame_id), :].reshape(-1, 2)
+        xy_vec[np.isnan(xy_vec)] = 100000
         proxmat[i, :, :] = pairwise_distances(xy_vec)
     proxmat[proxmat > 10000] = np.nan
     return proxmat
@@ -104,15 +104,19 @@ if __name__ == '__main__':
     save_dir = args.save_dir
     person_thresh = args.person_thresh
 
-    if filename == '':
-        file_paths = glob.glob(data_dir + '/*.pkl')
+    if filename == None:
+        file_paths = glob.glob(data_dir + '/*.csv')
     else:
-        files = [os.path.join(data_dir, filename)]
+        file_paths = [os.path.join(data_dir, filename)]
     for filepath in file_paths:
+        filename = filepath.split('/')[-1]
         df_joints = pd.read_csv(filepath)
         df_joints = df_joints.rename(columns={'# frame_id': 'frame_id'})
         df_joints = df_joints.replace(-1, np.nan)
         main_persons = find_main_persons(df_joints, person_thresh)
+        if len(main_persons) < 2:
+            print(f'Not enough objects for detection in file {filename}')
+            continue
         danger_joints = DANGER_JOINTS
         location_matrix = get_location_matrix(df_joints, main_persons, danger_joints)
         proximity_matrix = get_proximity_matrix(location_matrix, df_joints.frame_id.unique().tolist())
