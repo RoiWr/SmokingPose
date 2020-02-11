@@ -87,13 +87,19 @@ def track_persons(joints_array, n_frames, frame_rate):
     object_ids = []
     for i in np.arange(0, n_frames, frame_rate):
         detections = joints_array[joints_array[:, 0] == i, 1:5]
+        if detections.size == 0:
+            continue
         detections[detections == np.inf] = 100000
         # valid_dets_idx = np.argwhere(~np.isinf(detections).any(axis=1))[0]
 
         # update SORT
         # trackers is a np array where each row contains a valid bounding box and track_id (last column)
         trackers = mot_tracker.update(detections)
-        valid_trks_idx = np.argwhere(~np.isnan(trackers).any(axis=1))[0]
+        valid_trks_idx = np.argwhere(~np.isnan(trackers).any(axis=1)).reshape(-1)
+        if trackers.size == 0 or valid_trks_idx.size == 0:
+            object_ids_frame = np.tile(-1, detections.shape[0])
+            object_ids += list(object_ids_frame)
+            continue
 
         # match detections and trackers based on bbox centers distance
         det_centers = get_bbox_center(detections)

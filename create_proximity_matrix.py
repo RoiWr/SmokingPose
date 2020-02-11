@@ -38,7 +38,8 @@ def get_proximity_matrix(location_matrix, frames_to_calc):
     proxmat = np.zeros((len(frames_to_calc), proxmat_size, proxmat_size))
     # proxmat = np.zeros((df_joints.frame_id.nunique(), proxmat_size, proxmat_size))
     for i, frame_id in enumerate(frames_to_calc):
-        xy_vec = np.nan_to_num(location_matrix[:, :, int(frame_id), :].reshape(-1, 2), nan=100000)
+        xy_vec = location_matrix[:, :, int(frame_id), :].reshape(-1, 2)
+        xy_vec[np.isnan(xy_vec)] = 100000
         proxmat[i, :, :] = pairwise_distances(xy_vec)
     proxmat[proxmat > 10000] = np.nan
     return proxmat
@@ -77,10 +78,6 @@ def main():
     pass
 
 
-def test():
-    pass
-
-
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('--file', type=str, help='input file name')
@@ -104,8 +101,8 @@ if __name__ == '__main__':
     save_dir = args.save_dir
     person_thresh = args.person_thresh
 
-    if filename == '':
-        file_paths = glob.glob(data_dir + '/*.pkl')
+    if filename is None:
+        file_paths = glob.glob(data_dir + '/*.csv')
     else:
         files = [os.path.join(data_dir, filename)]
     for filepath in file_paths:
@@ -118,7 +115,7 @@ if __name__ == '__main__':
         proximity_matrix = get_proximity_matrix(location_matrix, df_joints.frame_id.unique().tolist())
         print(f"File {filename} successfully analyzed")
         if not args.dontsave:
-            out_filename = filename.split('.')[0] + '.pickle'
+            out_filename = filename.split('.')[0] + '.pkl'
             out_filepath = os.path.join(save_dir, out_filename)
             pickle_out = open(out_filepath, "wb")
             pickle.dump(proximity_matrix, pickle_out)
